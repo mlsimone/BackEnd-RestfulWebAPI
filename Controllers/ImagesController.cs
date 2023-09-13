@@ -8,11 +8,14 @@ using Microsoft.EntityFrameworkCore;
 using BackSide.Data;
 using BackSide.Models;
 using System.IO;
+using Microsoft.Identity.Web.Resource;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BackSide.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class ImagesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -45,6 +48,7 @@ namespace BackSide.Controllers
                           // Swagger didn't work when I tried to get id from QueryString.
                           // You should be able to do either/or?
                           // public async Task<ActionResult<Image>> GetImages(int id)
+        [RequiredScope(RequiredScopesConfigurationKey = "AzureAd:Scopes:Read")]
         public async Task<ActionResult<IEnumerable<Image>>> GetItemImages(int id, [FromQuery] string imageDirectory)  // [FromQuery] int itemId)
         {
             try
@@ -128,6 +132,7 @@ namespace BackSide.Controllers
         // MLS 7/31/23 No matter what I tried, I was not able to receive an array of Objects
         // public async Task<ActionResult<Item>> PostImages([FromForm] List<Image> images, [FromQuery] int itemId) // , int itemId) 
         // I am able to receive an array of IFormFile, therefore decided to do that...
+        [RequiredScope(RequiredScopesConfigurationKey = "AzureAd:Scopes:Write")]
         public async Task<ActionResult<Item>> PostImages([FromForm] List<IFormFile> images, [FromQuery] int itemId) // , int itemId) 
         {
             Item item;

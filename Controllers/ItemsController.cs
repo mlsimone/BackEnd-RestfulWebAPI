@@ -10,11 +10,14 @@ using System.Text;
 using BackSide.Data;
 using BackSide.Models;
 using BackSide.Utilities;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.Identity.Web.Resource;
 
 namespace BackSide.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class ItemsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -32,6 +35,7 @@ namespace BackSide.Controllers
 
         // GET: api/Items
         [HttpGet]
+        [RequiredScope(RequiredScopesConfigurationKey = "AzureAd:Scopes:Read")]
         public async Task<ActionResult<IEnumerable<Item>>> GetAllItems([FromQuery] string? searchFor)
         {
             try
@@ -63,6 +67,7 @@ namespace BackSide.Controllers
 
         // GET: api/Items/5
         [HttpGet("{id}")]
+        [RequiredScope(RequiredScopesConfigurationKey = "AzureAd:Scopes:Read")]
         public async Task<ActionResult<Item>> GetItem(int id)
         {
             if (_context.items == null)
@@ -126,6 +131,7 @@ namespace BackSide.Controllers
         // POST: api/Items
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
+        [RequiredScope(RequiredScopesConfigurationKey = "AzureAd:Scopes:Write")]
         public async Task<ActionResult<Item>> PostItem([FromForm] Item item)
         {
             // Item itemNoFormFile = item.CloneNoImage();

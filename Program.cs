@@ -1,5 +1,7 @@
 using BackSide.Data;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Web;
 
 namespace BackSide
 {
@@ -26,6 +28,13 @@ namespace BackSide
                        .AllowAnyHeader();
             }));
 
+
+            builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
+
+            // builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration, "AzureAd", "Bearer");
+
+
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
@@ -45,6 +54,8 @@ namespace BackSide
 
             app.UseHttpsRedirection();
 
+
+            app.UseAuthentication();
             app.UseAuthorization();
 
 
