@@ -27,8 +27,7 @@ namespace BackSide.Controllers
 
         // GET: api/Categories
         [HttpGet]
-        //[RequiredScope(RequiredScopesConfigurationKey = "AzureAd:Scopes:Read")]
-        [RequiredScope()]
+        [RequiredScope(RequiredScopesConfigurationKey = "AzureAd:Scopes:Read")]
         public async Task<ActionResult<IEnumerable<Category>>> Getcategories()
         {
           if (_context.categories == null)
