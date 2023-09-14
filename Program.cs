@@ -25,17 +25,18 @@ namespace BackSide
             // https://github.com/Azure-Samples/ms-identity-javascript-angular-tutorial/blob/main/3-Authorization-II/1-call-api/README.md#about-the-code
             // builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration);
 
+            // MLS 9/14/23 Added to see JWT Bearer Tokens (Access Tokens)
+            // Comment out because it slows down my site
+            //builder.Services.AddHttpLogging(logging =>
+            //{
+            //    logging.LoggingFields = HttpLoggingFields.All;
+            //    logging.RequestHeaders.Add("sec-ch-ua");
+            //    logging.ResponseHeaders.Add("MyResponseHeader");
+            //    logging.MediaTypeOptions.AddText("application/javascript");
+            //    logging.RequestBodyLogLimit = 4096;
+            //    logging.ResponseBodyLogLimit = 4096;
 
-            builder.Services.AddHttpLogging(logging =>
-            {
-                logging.LoggingFields = HttpLoggingFields.All;
-                logging.RequestHeaders.Add("sec-ch-ua");
-                logging.ResponseHeaders.Add("MyResponseHeader");
-                logging.MediaTypeOptions.AddText("application/javascript");
-                logging.RequestBodyLogLimit = 4096;
-                logging.ResponseBodyLogLimit = 4096;
-
-            });
+            //});
 
             builder.Services.AddControllers();
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -72,7 +73,7 @@ namespace BackSide
 
             // MLS 9/14/23 Add logging so we can see the JWT Bearer token in requests from
             // Angular client
-            app.UseHttpLogging();
+            // app.UseHttpLogging();
 
             app.UseHttpsRedirection();
 
