@@ -7,11 +7,15 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BackSide.Data;
 using BackSide.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.Identity.Web.Resource;
 
 namespace BackSide.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
+    
     public class CategoriesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -23,6 +27,7 @@ namespace BackSide.Controllers
 
         // GET: api/Categories
         [HttpGet]
+        [RequiredScope(RequiredScopesConfigurationKey = "AzureAd:Scopes:Read")]
         public async Task<ActionResult<IEnumerable<Category>>> Getcategories()
         {
           if (_context.categories == null)
@@ -34,6 +39,7 @@ namespace BackSide.Controllers
 
         // GET: api/Categories/5
         [HttpGet("{id}")]
+        [RequiredScope(RequiredScopesConfigurationKey = "AzureAd:Scopes:Read")]
         public async Task<ActionResult<Category>> GetCategory(int id)
         {
           if (_context.categories == null)
