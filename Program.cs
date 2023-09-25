@@ -5,6 +5,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using System.Configuration;
 
+// to use DefaultAzureCredential -- passwordless access to DB 
+using Microsoft.Extensions.Azure;
+using Azure.Identity;
+
+
 namespace BackSide
 {
     public class Program
@@ -19,7 +24,7 @@ namespace BackSide
             // See https://learn.microsoft.com/en-us/azure/active-directory/develop/scenario-protected-web-api-app-configuration?tabs=aspnetcore
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                             .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
- 
+
             // MLS 9/13/23 This method was discussed in a README file on github, but not used
             // in corresponding code sample
             // https://github.com/Azure-Samples/ms-identity-javascript-angular-tutorial/blob/main/3-Authorization-II/1-call-api/README.md#about-the-code
@@ -38,9 +43,32 @@ namespace BackSide
 
             //});
 
-            builder.Services.AddControllers();
+            // MLS 9/24/23 Once article said to do this.
+            //builder.Services.AddAzureClients(x =>
+            //{
+            //    x.AddBlobServiceClient(new Uri("https://<account-name>.blob.core.windows.net"));
+            //    x.UseCredential(new DefaultAzureCredential());
+            //});
+
+            // 9/24/23 Another said to do this:
+
+            var connection = String.Empty;
+            if (builder.Environment.IsDevelopment())
+            {
+                builder.Configuration.AddEnvironmentVariables().AddJsonFile("appsettings.json");
+                connection = builder.Configuration.GetConnectionString("AZURE_SQL_CONNECTIONSTRING");
+            }
+            else
+            {
+                connection = Environment.GetEnvironmentVariable("AZURE_SQL_CONNECTIONSTRING");
+            }
+
+            
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
-                                            options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+                                            options.UseSqlServer(connection));
+
+            builder.Services.AddControllers();
+            
 
             // MLS 6/8/23 forgot to add this.
             // MLS 5/17/23 forgot to add this.
