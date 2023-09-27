@@ -12,6 +12,8 @@ using Azure.Identity;
 // to use Azure Blob Storage
 using Azure.Storage.Blobs;
 using BackSide.Utilities;
+using Microsoft.Extensions.DependencyInjection;
+using Azure.Core;
 
 namespace BackSide
 {
@@ -52,30 +54,33 @@ namespace BackSide
             if (builder.Environment.IsDevelopment())
             {
                 builder.Configuration.AddEnvironmentVariables().AddJsonFile("appsettings.json");
-                connection = builder.Configuration.GetConnectionString("Default");
+                // connection = builder.Configuration.GetConnectionString("Default");
+                connection = builder.Configuration.GetConnectionString("AZURE_SQL_CONNECTIONSTRING");
             }
             else
             {
                 connection = Environment.GetEnvironmentVariable("AZURE_SQL_CONNECTIONSTRING");
             }
 
-            
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                                             options.UseSqlServer(connection));
+
+#if (Use_Azure_Blob_Storage == true)
+
+            TokenCredential credential = new DefaultAzureCredential();
+            Uri AzureBlobStorageAccountUri = new Uri(builder.Configuration.GetValue<String>("AzureBlobStorageAccount"));
+
+            builder.Services.AddSingleton<BlobServiceClient>(x => new BlobServiceClient(AzureBlobStorageAccountUri, credential));
+
+            // MLS 9/27/23
+            builder.Services.AddSingleton<BlobStorageService>();
+#endif
+
 
             // MLS 9/26/23
             builder.Services.AddSingleton<FileStorageService>();
 
-            // 9/25/23 set up singleton to BlobServiceClient
-#if (Use_Azure_Blob_Storage == true)
-            var blobAccount = builder.Configuration.GetValue<String>("AzureBlobStorageAccount");
-            builder.Services.AddSingleton<BlobServiceClient>(x =>
-                new BlobServiceClient(new Uri(builder.Configuration.GetValue<String>("AzureBlobStorageAccount")),
-                                        new DefaultAzureCredential()));
-#endif
-
             builder.Services.AddControllers();
-            
 
             // MLS 6/8/23 forgot to add this.
             // MLS 5/17/23 forgot to add this.

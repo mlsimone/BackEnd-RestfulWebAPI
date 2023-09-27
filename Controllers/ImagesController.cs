@@ -64,7 +64,7 @@ namespace BackSide.Controllers
                 }
                
                 foreach (var image in images)
-                    image.imageNameB64 = _fileStorageService.GetImageAsB64String(imageDirectory, image.imageNameB64);
+                    image.imageNameB64 = await _fileStorageService.GetImageAsB64String(imageDirectory, image.imageNameB64);
 
                 return Ok(images);
             }
@@ -173,7 +173,7 @@ namespace BackSide.Controllers
 
                     try
                     {
-                        item.imageName = _fileStorageService.GetImageAsB64String(item.imageDirectory, item.imageName);
+                        item.imageName = await _fileStorageService.GetImageAsB64String(item.imageDirectory, item.imageName);
                         // Note: before sending the item back in HttpResponse, we need to convert
                         // the image.name to a base64string representation
                         // of image.

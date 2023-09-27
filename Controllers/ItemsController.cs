@@ -51,7 +51,7 @@ namespace BackSide.Controllers
 
                 // get the image from the hard drive and store it as base64 string which is <img src=base64
                 foreach (var item in items)
-                    item.imageName = _fileStorageService.GetImageAsB64String(item.imageDirectory, item.imageName);
+                    item.imageName = await _fileStorageService.GetImageAsB64String(item.imageDirectory, item.imageName);
 
                 return Ok(items);
             }
@@ -82,7 +82,7 @@ namespace BackSide.Controllers
                 }
 
                 // get the image from the hard drive and store it as base64 string so it can be displayed in image tag
-                item.imageName = _fileStorageService.GetImageAsB64String(item.imageDirectory, item.imageName);
+                item.imageName = await _fileStorageService.GetImageAsB64String(item.imageDirectory, item.imageName);
 
                 return Ok(item);
             }
@@ -155,10 +155,7 @@ namespace BackSide.Controllers
 
                     // Now that the item has been saved to DB,
                     // Tack on the base64 string representation into item.imageName...
-                    item.imageName = _fileStorageService
-                                        .GetImageAsB64String(
-                                                item.imageDirectory,
-                                                item.imageName);
+                    item.imageName = await _fileStorageService.GetImageAsB64String(item.imageDirectory, item.imageName);
                 }
 
             }
