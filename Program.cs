@@ -9,6 +9,11 @@ using System.Configuration;
 using Microsoft.Extensions.Azure;
 using Azure.Identity;
 
+// to use Azure Blob Storage
+using Azure.Storage.Blobs;
+using BackSide.Utilities;
+using Microsoft.Extensions.DependencyInjection;
+using Azure.Core;
 
 namespace BackSide
 {
@@ -20,7 +25,7 @@ namespace BackSide
 
             // Add services to the container.
 
-            // MLS 9/14/23 Access Token Validation is done for the developer when this is called.
+            // MLS 9/14/23 Access Token Validation is done for the developer by Microsoft validation code when this is called.
             // See https://learn.microsoft.com/en-us/azure/active-directory/develop/scenario-protected-web-api-app-configuration?tabs=aspnetcore
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                             .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
@@ -43,19 +48,13 @@ namespace BackSide
 
             //});
 
-            // MLS 9/24/23 Once article said to do this.
-            //builder.Services.AddAzureClients(x =>
-            //{
-            //    x.AddBlobServiceClient(new Uri("https://<account-name>.blob.core.windows.net"));
-            //    x.UseCredential(new DefaultAzureCredential());
-            //});
 
-            // 9/24/23 Another said to do this:
-
+            // 9/24/23 set up database context
             var connection = String.Empty;
             if (builder.Environment.IsDevelopment())
             {
                 builder.Configuration.AddEnvironmentVariables().AddJsonFile("appsettings.json");
+                // connection = builder.Configuration.GetConnectionString("Default");
                 connection = builder.Configuration.GetConnectionString("AZURE_SQL_CONNECTIONSTRING");
             }
             else
@@ -63,12 +62,25 @@ namespace BackSide
                 connection = Environment.GetEnvironmentVariable("AZURE_SQL_CONNECTIONSTRING");
             }
 
-            
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                                             options.UseSqlServer(connection));
 
+#if (Use_Azure_Blob_Storage == true)
+
+            TokenCredential credential = new DefaultAzureCredential();
+            Uri AzureBlobStorageAccountUri = new Uri(builder.Configuration.GetValue<String>("AzureBlobStorageAccount"));
+
+            builder.Services.AddSingleton<BlobServiceClient>(x => new BlobServiceClient(AzureBlobStorageAccountUri, credential));
+
+            // MLS 9/27/23
+            builder.Services.AddSingleton<BlobStorageService>();
+#endif
+
+
+            // MLS 9/26/23
+            builder.Services.AddSingleton<FileStorageService>();
+
             builder.Services.AddControllers();
-            
 
             // MLS 6/8/23 forgot to add this.
             // MLS 5/17/23 forgot to add this.

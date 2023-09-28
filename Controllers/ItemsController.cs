@@ -13,6 +13,7 @@ using BackSide.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Identity.Web.Resource;
 
+
 namespace BackSide.Controllers
 {
     [Route("api/[controller]")]
@@ -21,16 +22,13 @@ namespace BackSide.Controllers
     public class ItemsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
-        public readonly string BaseImageDirectory;
-        private readonly IConfiguration Configuration;
+        private readonly FileStorageService _fileStorageService;
 
-        public ItemsController(ApplicationDbContext context, IConfiguration configuration)
+        public ItemsController(ApplicationDbContext context,
+            FileStorageService fileStorageService)
         {
             _context = context;
-            Configuration = configuration;
-            BaseImageDirectory = Configuration["ImageDirectory"]; // var defaultLogLevel = Configuration["Logging:LogLevel:Default"];
-            // MLS 7/26/23 below gave null result -- didn't work
-            // System.Configuration.ConfigurationManager.AppSettings["ImageDirectory"];
+            _fileStorageService = fileStorageService;
         }
 
         // GET: api/Items
@@ -51,10 +49,9 @@ namespace BackSide.Controllers
                 else
                     items = await _context.items.ToListAsync();
 
-
                 // get the image from the hard drive and store it as base64 string which is <img src=base64
                 foreach (var item in items)
-                    item.imageName = BackSide.Utilities.Files.GetImageFromHDandReturnB64String(Path.Combine(BaseImageDirectory, item.imageDirectory), item.imageName);
+                    item.imageName = await _fileStorageService.GetImageAsB64String(item.imageDirectory, item.imageName);
 
                 return Ok(items);
             }
@@ -85,7 +82,7 @@ namespace BackSide.Controllers
                 }
 
                 // get the image from the hard drive and store it as base64 string so it can be displayed in image tag
-                item.imageName = BackSide.Utilities.Files.GetImageFromHDandReturnB64String(Path.Combine(BaseImageDirectory, item.imageDirectory), item.imageName);
+                item.imageName = await _fileStorageService.GetImageAsB64String(item.imageDirectory, item.imageName);
 
                 return Ok(item);
             }
@@ -140,7 +137,6 @@ namespace BackSide.Controllers
                 return Problem($"{item.name} cannot be saved to the database. There is a problem accessing the database.");
             }
 
-
             try
             {
                 // MLS 7/25/23 I think there is a problem with the Add and Save when item.image is Non-null.
@@ -149,18 +145,17 @@ namespace BackSide.Controllers
                 _context.items.Add(item);
                 await _context.SaveChangesAsync();
 
-                // MLS ToDo: save the image to hard drive
                 if (item.image != null)
                 {
-                    BackSide.Utilities.Files.SaveImageToHardDrive(item.image, Path.Combine(BaseImageDirectory, item.imageDirectory));
+                    // BackSide.Utilities.Files.SaveImage(item.image, Path.Combine(BaseImageDirectory, item.imageDirectory));
+                    _fileStorageService.SaveImage(item.image, item.imageDirectory);
 
                     // MLS 7/25/23 When I return the item, the image has to be in it's base64 representation 
                     // To implement, it means that item.image = null, and item.imageName = base64 string representation
 
-                    // Now that the itemNoFormFile has been saved to DB,
+                    // Now that the item has been saved to DB,
                     // Tack on the base64 string representation into item.imageName...
-                    item.imageName = BackSide.Utilities.Files.GetImageFromHDandReturnB64String(
-                                            Path.Combine(BaseImageDirectory, item.imageDirectory), item.imageName);
+                    item.imageName = await _fileStorageService.GetImageAsB64String(item.imageDirectory, item.imageName);
                 }
 
             }

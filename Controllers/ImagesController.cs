@@ -10,6 +10,8 @@ using BackSide.Models;
 using System.IO;
 using Microsoft.Identity.Web.Resource;
 using Microsoft.AspNetCore.Authorization;
+using Azure.Storage.Blobs;
+using BackSide.Utilities;
 
 namespace BackSide.Controllers
 {
@@ -19,16 +21,11 @@ namespace BackSide.Controllers
     public class ImagesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
-        public readonly string BaseImageDirectory; // = System.Configuration.ConfigurationManager.AppSettings["ImageDirectory"];
-        private readonly IConfiguration Configuration;
-
-        public ImagesController(ApplicationDbContext context, IConfiguration configuration)
+        private readonly FileStorageService _fileStorageService;
+        public ImagesController(ApplicationDbContext context, FileStorageService fileStorageService)
         {
             _context = context;
-            Configuration = configuration;
-            BaseImageDirectory = Configuration["ImageDirectory"]; // var defaultLogLevel = Configuration["Logging:LogLevel:Default"];
-            // MLS 7/26/23 below gave null result -- didn't work
-            // System.Configuration.ConfigurationManager.AppSettings["ImageDirectory"];
+            _fileStorageService = fileStorageService;
         }
 
         //// GET: api/Images
@@ -65,12 +62,9 @@ namespace BackSide.Controllers
                 {
                     return NotFound();
                 }
-
-                // get the images from the hard drive and save as Base64 strings
-                // get the imageDirectory from the item associated with the images...
-                string filePath = Path.Combine(BaseImageDirectory, imageDirectory);
+               
                 foreach (var image in images)
-                    image.imageNameB64 = BackSide.Utilities.Files.GetImageFromHDandReturnB64String(filePath, image.imageNameB64);
+                    image.imageNameB64 = await _fileStorageService.GetImageAsB64String(imageDirectory, image.imageNameB64);
 
                 return Ok(images);
             }
@@ -156,20 +150,17 @@ namespace BackSide.Controllers
                 {
                     try
                     {
-                        // get the imageDirectory from the item associated with the images...
-                        imageDirectory = Path.Combine(BaseImageDirectory, item.imageDirectory);
                         foreach (IFormFile image in images)
                         {
                             // create a database record
                             Image imageRecord = new Image(itemId, image.FileName);
 
                             // saves imageName and itemId to database
-
                             _context.images.Add(imageRecord);
                             await _context.SaveChangesAsync();
 
-                            // save the image to hard drive
-                            BackSide.Utilities.Files.SaveImageToHardDrive(image, imageDirectory);
+                            // save the image to hard drive in the item's imageDirectory
+                            _fileStorageService.SaveImage(image, item.imageDirectory);
                         }
 
                     }
@@ -182,7 +173,7 @@ namespace BackSide.Controllers
 
                     try
                     {
-                        item.imageName = Utilities.Files.GetImageFromHDandReturnB64String(imageDirectory, item.imageName);
+                        item.imageName = await _fileStorageService.GetImageAsB64String(item.imageDirectory, item.imageName);
                         // Note: before sending the item back in HttpResponse, we need to convert
                         // the image.name to a base64string representation
                         // of image.
