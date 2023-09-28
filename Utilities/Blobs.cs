@@ -9,6 +9,7 @@ using Microsoft.Build.Evaluation;
 using Microsoft.Extensions.Options;
 using System.ComponentModel;
 using System.Configuration;
+using System.IO;
 using System.Threading.Channels;
 
 namespace BackSide.Utilities
@@ -35,7 +36,7 @@ namespace BackSide.Utilities
             // all container names must be lower case
             string containerName = imageDirectory.ToLower();
             string blobName = fileName;
-            Uri containerUri = new Uri($"_blobAccount/{containerName}");
+            Uri containerUri = new Uri($"{_blobAccount}/{containerName}");
 
             BlobContainerClient containerClient;
             BlobContainerClient containerClient2;
@@ -87,19 +88,28 @@ namespace BackSide.Utilities
             string containerName = imageDirectory.ToLower();
             string blobName = fileName;
             
-            Uri containerUri = new Uri($"_blobAccount/{containerName}");
-            Uri blobUri = new Uri($"_blobAccount/{containerName}/{fileName}");
+            Uri containerUri = new Uri($"{_blobAccount}/{containerName}");
+            Uri blobUri = new Uri($"{_blobAccount}/{containerName}/{fileName}");
 
             TokenCredential credential = new DefaultAzureCredential();
 
             BlobClient blobClient = new BlobClient(blobUri, credential, default);
 
-            
             string base64String = String.Empty;
 
+
+
+            // These streams don't support writing and will throw an exception on this call ... await stream.WriteAsync(imageBytes);
+            // using (Stream stream = blobClient.OpenRead())
             // using (Stream stream = await blobClient.OpenReadAsync())
-            using (MemoryStream m = (MemoryStream) await blobClient.OpenReadAsync())
-            { 
+            // This throws an exception about not being able to convert data from the bloblClient.OpenReadAsync call into a MemoryStream
+            // using (MemoryStream m = (MemoryStream) await blobClient.OpenReadAsync())
+            using (MemoryStream m = new MemoryStream())
+            {
+                // since the above streams were read-only,
+                // copied them to a memory stream which is writable (below)
+                blobClient.OpenRead().CopyTo(m); 
+
                 byte[] imageBytes = m.ToArray();
                 // append this before the base64 image representation: data: image / jpeg; base64
                 base64String = "data: image / jpeg; base64," + Convert.ToBase64String(imageBytes);
