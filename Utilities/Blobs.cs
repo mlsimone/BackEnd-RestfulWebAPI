@@ -19,6 +19,7 @@ namespace BackSide.Utilities
         private readonly IConfiguration _configuration;
         private readonly BlobServiceClient _blobServiceClient;
         private readonly string _blobAccount;
+        private readonly TokenCredential _credential;
         public BlobStorageService(BlobServiceClient blobServiceClient, IConfiguration configuration)
         {
             _configuration = configuration;
@@ -28,6 +29,10 @@ namespace BackSide.Utilities
 
             // create the root container
             CreateRootContainer(_blobServiceClient);
+
+            // MLS 9/29/23
+            string userAssignedClientId = _configuration["ManagedIdentityClientId"];
+            TokenCredential _credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions { ManagedIdentityClientId = userAssignedClientId });
         }
 
         // MLS ToDo: 9/26/23
@@ -41,7 +46,7 @@ namespace BackSide.Utilities
             BlobContainerClient containerClient;
             BlobContainerClient containerClient2;
             BlobClient blobClient;
-            TokenCredential credential = new DefaultAzureCredential();
+            
             Boolean isExist;
 
             // MLS I am confused about whether or not the container gets created when methods to 
@@ -51,7 +56,7 @@ namespace BackSide.Utilities
             // Create the containerClient2
             // MLS does this create the container if it doesn't exist?
             
-            containerClient2 = new(containerUri, credential, default);
+            containerClient2 = new(containerUri, _credential, default);
             isExist = ContainerNameExists(containerName);
 
             // This function (CreateIfNotExists) needs to have an instance of the containerClient to create a container so I believe 
@@ -91,13 +96,9 @@ namespace BackSide.Utilities
             Uri containerUri = new Uri($"{_blobAccount}/{containerName}");
             Uri blobUri = new Uri($"{_blobAccount}/{containerName}/{fileName}");
 
-            TokenCredential credential = new DefaultAzureCredential();
-
-            BlobClient blobClient = new BlobClient(blobUri, credential, default);
+            BlobClient blobClient = new BlobClient(blobUri, _credential, default);
 
             string base64String = String.Empty;
-
-
 
             // These streams don't support writing and will throw an exception on this call ... await stream.WriteAsync(imageBytes);
             // using (Stream stream = blobClient.OpenRead())

@@ -66,20 +66,16 @@ namespace BackSide
                                             options.UseSqlServer(connection));
 
 #if (Use_Azure_Blob_Storage == true)
-
-            TokenCredential credential = new DefaultAzureCredential();
+            string userAssignedClientId = builder.Configuration.GetValue<String>("ManagedIdentityClientId");
+            TokenCredential credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions { ManagedIdentityClientId = userAssignedClientId });
             Uri AzureBlobStorageAccountUri = new Uri(builder.Configuration.GetValue<String>("AzureBlobStorageAccount"));
-
             builder.Services.AddSingleton<BlobServiceClient>(x => new BlobServiceClient(AzureBlobStorageAccountUri, credential));
-
             // MLS 9/27/23
             builder.Services.AddSingleton<BlobStorageService>();
 #endif
 
-
             // MLS 9/26/23
             builder.Services.AddSingleton<FileStorageService>();
-
             builder.Services.AddControllers();
 
             // MLS 6/8/23 forgot to add this.
@@ -100,10 +96,13 @@ namespace BackSide
 
             var app = builder.Build();
 
+            // MLS 9/29/23 Azure API Management needs the Swagger definitions to always be present,
+            // regardless of the application's environment
+            app.UseSwagger();
+
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
-                app.UseSwagger();
                 app.UseSwaggerUI();
             }
 
