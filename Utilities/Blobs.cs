@@ -30,9 +30,11 @@ namespace BackSide.Utilities
             // create the root container
             CreateRootContainer(_blobServiceClient);
 
-            // MLS 9/29/23
-            string userAssignedClientId = _configuration["ManagedIdentityClientId"];
-            TokenCredential _credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions { ManagedIdentityClientId = userAssignedClientId });
+            // MLS 9/29/23 added based on video
+            // 10/4/23 removed based on article
+            //string userAssignedClientId = _configuration["ManagedIdentityClientId"];
+            // TokenCredential _credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions { ManagedIdentityClientId = userAssignedClientId });
+            TokenCredential _credential = new DefaultAzureCredential();
         }
 
         // MLS ToDo: 9/26/23
