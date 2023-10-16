@@ -31,8 +31,8 @@ jobs:
       - name: install dotnet ef
         run: dotnet tool install -g dotnet-ef
         
-      - name: dotnet bundle migration
-        run: dotnet ef migrations bundle --runtime linux-x64 -p  BackEnd-RestfulWebAPI/BackSide.csproj -o ${{env.DOTNET_ROOT}}/myapp/migrate
+      - name: dotnet bundle migration  
+        run: dotnet ef migrations bundle --runtime linux-x64 -p BackSide.csproj -o ${{env.DOTNET_ROOT}}/myapp/migrate
  
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v3
