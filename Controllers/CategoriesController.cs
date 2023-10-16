@@ -14,15 +14,20 @@ namespace BackSide.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    // MLS 10/16/23 Temporarily remove call to this
+    // [Authorize]
     
     public class CategoriesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
 
-        public CategoriesController(ApplicationDbContext context)
+        // MLS 10/3/23 Add a Logger so I can see what is happening in Azure
+        private readonly ILogger<CategoriesController> _logger;
+
+        public CategoriesController(ApplicationDbContext context, ILogger<CategoriesController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // GET: api/Categories
@@ -30,11 +35,41 @@ namespace BackSide.Controllers
         [RequiredScope(RequiredScopesConfigurationKey = "AzureAd:Scopes:Read")]
         public async Task<ActionResult<IEnumerable<Category>>> Getcategories()
         {
-          if (_context.categories == null)
-          {
-              return NotFound();
-          }
-            return await _context.categories.ToListAsync();
+            try
+            {
+                _logger.LogWarning("\n\n\n");
+                _logger.LogWarning("\n\n\n");
+                _logger.LogWarning("Call to GetCategories");
+                _logger.LogWarning("\n\n\n");
+                _logger.LogWarning("\n\n\n");
+                if (_context == null)
+                {
+                    _logger.LogError("\n\n\n");
+                    _logger.LogError("\n\n\n");
+                    _logger.LogError("Database Context is NULL");
+                    _logger.LogError("\n\n\n");
+                    _logger.LogError("\n\n\n");
+                }
+
+                if (_context.categories == null)
+                {
+                    return NotFound();
+                }
+                return await _context.categories.ToListAsync();
+            }
+            catch(Exception e)
+            {
+                _logger.LogError("\n\n\n");
+                _logger.LogError("\n\n\n");
+                _logger.LogError("Call to GetCategories Shit the bed with exception:");
+                _logger.LogError($"{e.Message}\n\n\n");
+                _logger.LogError($"{e.InnerException}\n\n\n");
+                _logger.LogError("\n\n\n");
+                _logger.LogError("\n\n\n");
+
+                return Problem($"{ e.Message}");
+            }
+            
         }
 
         // GET: api/Categories/5

@@ -18,7 +18,8 @@ namespace BackSide.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    // MLS 10/16/23 Temporarily remove call to this
+    // [Authorize]
     public class ItemsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
