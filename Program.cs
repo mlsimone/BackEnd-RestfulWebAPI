@@ -28,14 +28,14 @@ namespace BackSide
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-
             // Add services to the container.
 
+            // MLS 11/8/23 - added this back in because running on localhost...
             // MLS 10/16/23 Temporarily remove call to this. Not sure is this should be called when software is hosted in Azure Web App?
             // MLS 9/14/23 Access Token Validation is done for the developer by Microsoft validation code when this is called.
             // See https://learn.microsoft.com/en-us/azure/active-directory/develop/scenario-protected-web-api-app-configuration?tabs=aspnetcore
-            //builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            //                .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
+            builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                            .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
 
             // MLS 9/13/23 This method was discussed in a README file on github, but not used
             // in corresponding code sample
@@ -63,10 +63,14 @@ namespace BackSide
             string error_database = String.Empty;
             try
             {
-                azure_connection_string = builder.Configuration.GetConnectionString("AZURE_SQL_CONNECTIONSTRING");
+                // azure_connection_string = builder.Configuration.GetConnectionString("AZURE_SQL_CONNECTIONSTRING");
+                azure_connection_string = builder.Configuration.GetConnectionString("Default");
                 // Uncomment one of the two lines depending on the identity type    
                 SqlConnection authenticatedConnection = new SqlConnection(azure_connection_string); // system-assigned identity
-                                                                                                    //SqlConnection authenticatedConnection = new SqlConnection("Server=tcp:<server-name>.database.windows.net;Database=<database-name>;Authentication=Active Directory Default;User Id=<client-id-of-user-assigned-identity>;TrustServerCertificate=True"); // user-assigned identity
+                //SqlConnection authenticatedConnection = 
+                // new SqlConnection("Server=tcp:<server-name>.database.windows.net;Database=<database-name>;
+                // Authentication=Active Directory Default;User Id=<client-id-of-user-assigned-identity>;
+                // TrustServerCertificate=True"); // user-assigned identity
 
                 // get the database context
                 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -127,7 +131,9 @@ namespace BackSide
             app.Logger.LogWarning("Starting the app\n");
             app.Logger.LogWarning($"Connection String: {azure_connection_string}\n\n\n");
             if (!String.IsNullOrEmpty(error_database)) app.Logger.LogWarning($"Error: {error_database}\n\n\n");
+#if (Use_Azure_Blob_Storage == true)
             if (!String.IsNullOrEmpty(error_blobStorage)) app.Logger.LogWarning($"Error: {error_blobStorage}\n\n\n");
+#endif
 
             // MLS 9/29/23 Azure API Management needs the Swagger definitions to always be present,
             // regardless of the application's environment
