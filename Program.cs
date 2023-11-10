@@ -63,8 +63,8 @@ namespace BackSide
             string error_database = String.Empty;
             try
             {
-                // azure_connection_string = builder.Configuration.GetConnectionString("AZURE_SQL_CONNECTIONSTRING");
-                azure_connection_string = builder.Configuration.GetConnectionString("Default");
+                azure_connection_string = builder.Configuration.GetConnectionString("AZURE_SQL_CONNECTIONSTRING");
+                // azure_connection_string = builder.Configuration.GetConnectionString("Default");
                 // Uncomment one of the two lines depending on the identity type    
                 SqlConnection authenticatedConnection = new SqlConnection(azure_connection_string); // system-assigned identity
                 //SqlConnection authenticatedConnection = 
