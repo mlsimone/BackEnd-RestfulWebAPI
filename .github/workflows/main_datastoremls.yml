@@ -53,5 +53,5 @@ jobs:
         with:
           app-name: 'DataStoreMLS'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_E5CB44E00DF14EB8B168FF6F1D0DF492 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_50EA5B3EC365480B9008DA3D49CECBB3 }}
           package: .
