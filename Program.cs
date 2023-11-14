@@ -1,3 +1,5 @@
+#define Use_Azure_Blob_Storage
+
 using BackSide.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpLogging;
@@ -27,9 +29,13 @@ namespace BackSide
     {
         public static void Main(string[] args)
         {
-            var builder = WebApplication.CreateBuilder(args);
+            WebApplication app;
+
+            WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
             // Add services to the container.
 
+            // MLS 11/13/23 - I removed the built-in authentication middleware
+            // MLS 11/10/23 - moved software to Azure which has "builtin" authentication middleware, so commented out call...
             // MLS 11/8/23 - added this back in because running on localhost...
             // MLS 10/16/23 Temporarily remove call to this. Not sure is this should be called when software is hosted in Azure Web App?
             // MLS 9/14/23 Access Token Validation is done for the developer by Microsoft validation code when this is called.
@@ -42,19 +48,19 @@ namespace BackSide
             // https://github.com/Azure-Samples/ms-identity-javascript-angular-tutorial/blob/main/3-Authorization-II/1-call-api/README.md#about-the-code
             // builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration);
 
-            // MLS 9/14/23 Added to see JWT Bearer Tokens (Access Tokens)
+            // MLS 9/14/23 Added to see JWT Bearer Tokens(Access Tokens)
             // Comment out because it slows down my site
             // Logs the output to a console window?
-            //builder.Services.AddHttpLogging(logging =>
-            //{
-            //    logging.LoggingFields = HttpLoggingFields.All;
-            //    logging.RequestHeaders.Add("sec-ch-ua");
-            //    logging.ResponseHeaders.Add("MyResponseHeader");
-            //    logging.MediaTypeOptions.AddText("application/javascript");
-            //    logging.RequestBodyLogLimit = 4096;
-            //    logging.ResponseBodyLogLimit = 4096;
+            builder.Services.AddHttpLogging(logging =>
+            {
+                logging.LoggingFields = HttpLoggingFields.All;
+                logging.RequestHeaders.Add("sec-ch-ua");
+                logging.ResponseHeaders.Add("MyResponseHeader");
+                logging.MediaTypeOptions.AddText("application/javascript");
+                logging.RequestBodyLogLimit = 4096;
+                logging.ResponseBodyLogLimit = 4096;
 
-            //});
+            });
 
 
             // 9/24/23 set up database context
@@ -62,7 +68,7 @@ namespace BackSide
             string azure_connection_string = String.Empty;
             string error_database = String.Empty;
             try
-            {
+            {   // MLS 11/14/23 ToDo
                 azure_connection_string = builder.Configuration.GetConnectionString("AZURE_SQL_CONNECTIONSTRING");
                 // azure_connection_string = builder.Configuration.GetConnectionString("Default");
                 // Uncomment one of the two lines depending on the identity type    
@@ -81,7 +87,7 @@ namespace BackSide
                 error_database = e.Message;
             }
 
-#if (Use_Azure_Blob_Storage == true)
+#if Use_Azure_Blob_Storage
             String error_blobStorage = String.Empty;
             try
             {
@@ -96,74 +102,81 @@ namespace BackSide
             {
                 error_blobStorage = e.Message;
             }
- 
+
+#endif
+            try
+            {
+                // MLS 9/26/23
+                builder.Services.AddSingleton<FileStorageService>();
+                builder.Services.AddControllers();
+
+                // MLS 6/8/23 forgot to add this.
+                // MLS 5/17/23 forgot to add this.
+                // Allowing CORS for all domains and HTTP methods for the purpose of the sample
+                // In production, modify this with the actual domains and HTTP methods you want to allow
+                builder.Services.AddCors(o => o.AddPolicy("default", builder =>
+                {
+                    builder.AllowAnyOrigin()
+                           .AllowAnyMethod()
+                           .AllowAnyHeader();
+                }));
+
+
+                // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+                builder.Services.AddEndpointsApiExplorer();
+                builder.Services.AddSwaggerGen();
+
+                app = builder.Build();
+
+                // MLS 10/3/23
+                // Logs created with the default logging providers are displayed: 
+                // In Visual Studio:  In the Debug output window when debugging. In the ASP.NET Core Web Server window.
+                // With dotnet run:   In the console window 
+
+                app.Logger.LogWarning("\n\n\n");
+                app.Logger.LogWarning("\n\n\n");
+                app.Logger.LogWarning("Starting the app\n");
+                app.Logger.LogWarning($"Connection String: {azure_connection_string}\n\n\n");
+                if (!String.IsNullOrEmpty(error_database)) app.Logger.LogWarning($"Error: {error_database}\n\n\n");
+#if Use_Azure_Blob_Storage
+                if (!String.IsNullOrEmpty(error_blobStorage)) app.Logger.LogWarning($"Error: {error_blobStorage}\n\n\n");
 #endif
 
-            // MLS 9/26/23
-            builder.Services.AddSingleton<FileStorageService>();
-            builder.Services.AddControllers();
+                // MLS 9/29/23 Azure API Management needs the Swagger definitions to always be present,
+                // regardless of the application's environment
+                app.UseSwagger();
 
-            // MLS 6/8/23 forgot to add this.
-            // MLS 5/17/23 forgot to add this.
-            // Allowing CORS for all domains and HTTP methods for the purpose of the sample
-            // In production, modify this with the actual domains and HTTP methods you want to allow
-            builder.Services.AddCors(o => o.AddPolicy("default", builder =>
-            {
-                builder.AllowAnyOrigin()
-                       .AllowAnyMethod()
-                       .AllowAnyHeader();
-            }));
+                // Configure the HTTP request pipeline.
+                // MLS 10/16/23 Temporarily Allow application to show Swagger UI in production
+                // if (app.Environment.IsDevelopment())
+                {
+                    app.UseSwaggerUI();
+                }
+
+                // MLS 6/8/23 forgot to add this.
+                // MLS 5/17/23 - added at end of day. was missing this all day!
+                app.UseCors("default");
+
+                // MLS 9/14/23 Add logging so we can see the JWT Bearer token in requests from
+                // Angular client
+                // app.UseHttpLogging();
+
+                app.UseHttpsRedirection();
 
 
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+                app.UseAuthentication();
+                app.UseAuthorization();
 
-            var app = builder.Build();
 
-            // MLS 10/3/23
-            // Logs created with the default logging providers are displayed: 
-            // In Visual Studio:  In the Debug output window when debugging. In the ASP.NET Core Web Server window.
-            // With dotnet run:   In the console window 
-            
-            app.Logger.LogWarning("\n\n\n");
-            app.Logger.LogWarning("\n\n\n");
-            app.Logger.LogWarning("Starting the app\n");
-            app.Logger.LogWarning($"Connection String: {azure_connection_string}\n\n\n");
-            if (!String.IsNullOrEmpty(error_database)) app.Logger.LogWarning($"Error: {error_database}\n\n\n");
-#if (Use_Azure_Blob_Storage == true)
-            if (!String.IsNullOrEmpty(error_blobStorage)) app.Logger.LogWarning($"Error: {error_blobStorage}\n\n\n");
-#endif
+                app.MapControllers();
 
-            // MLS 9/29/23 Azure API Management needs the Swagger definitions to always be present,
-            // regardless of the application's environment
-            app.UseSwagger();
-
-            // Configure the HTTP request pipeline.
-            // MLS 10/16/23 Temporarily Allow application to show Swagger UI in production
-            // if (app.Environment.IsDevelopment())
-            {
-                app.UseSwaggerUI();
+                app.Run();
             }
+            catch (Exception ex)
+            {
+                //app?.Logger.LogError($"MAIN has thrown an exception.\n {ex.Message}");
 
-            // MLS 6/8/23 forgot to add this.
-            // MLS 5/17/23 - added at end of day. was missing this all day!
-            app.UseCors("default");
-
-            // MLS 9/14/23 Add logging so we can see the JWT Bearer token in requests from
-            // Angular client
-            // app.UseHttpLogging();
-
-            app.UseHttpsRedirection();
-
-
-            app.UseAuthentication();
-            app.UseAuthorization();
-
-
-            app.MapControllers();
-
-            app.Run();
+            }
         }
     }
 }
