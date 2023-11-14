@@ -34,14 +34,19 @@ namespace BackSide
             WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
             // Add services to the container.
 
+            // MLS 11/14/23 - Commented out because the application is NOT logging or running? I think?
+            // I believe there may be a problem with the App Service's ability to builder.Configuration.GetSection("AzureAd")?
+            // It's NOT in a hierarchical JSON structure as it is in appsetting.json.
+            // So I opted to add the built-in authentication, hoping I can get a log of the application's "Starting the app"
+            // 
             // MLS 11/13/23 - I removed the built-in authentication middleware
             // MLS 11/10/23 - moved software to Azure which has "builtin" authentication middleware, so commented out call...
             // MLS 11/8/23 - added this back in because running on localhost...
             // MLS 10/16/23 Temporarily remove call to this. Not sure is this should be called when software is hosted in Azure Web App?
             // MLS 9/14/23 Access Token Validation is done for the developer by Microsoft validation code when this is called.
             // See https://learn.microsoft.com/en-us/azure/active-directory/develop/scenario-protected-web-api-app-configuration?tabs=aspnetcore
-            builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                            .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
+            //builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            //                .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
 
             // MLS 9/13/23 This method was discussed in a README file on github, but not used
             // in corresponding code sample
