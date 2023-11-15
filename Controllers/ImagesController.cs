@@ -17,8 +17,9 @@ namespace BackSide.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    // MLS 11/15/23 Remove call until I can learn more about Authorization in Azure. This setting works great in localhost
     // MLS 10/16/23 Temporarily remove call to this
-    [Authorize]
+    // [Authorize]
     public class ImagesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -46,6 +47,8 @@ namespace BackSide.Controllers
                           // Swagger didn't work when I tried to get id from QueryString.
                           // You should be able to do either/or?
                           // public async Task<ActionResult<Image>> GetImages(int id)
+
+        
         [RequiredScope(RequiredScopesConfigurationKey = "AzureAd:Scopes:Read")]
         public async Task<ActionResult<IEnumerable<Image>>> GetItemImages(int id, [FromQuery] string imageDirectory)  // [FromQuery] int itemId)
         {

@@ -34,6 +34,11 @@ namespace BackSide
             WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
             // Add services to the container.
 
+            // MLS 11/15/23 The applicatin is crashing in Easy_Auth -- which is the built in Authentication. 
+            // At this point in time, I have no idea why the Authentication is crashing, but I can't see any of my logged messages,
+            // like "starting the app"
+            // I will remove authentication/authorization (SCOPES) completely until I can learn more about the topic
+
             // MLS 11/14/23 - Commented out because the application is NOT logging or running? I think?
             // I believe there may be a problem with the App Service's ability to builder.Configuration.GetSection("AzureAd")?
             // It's NOT in a hierarchical JSON structure as it is in appsetting.json.
@@ -56,16 +61,16 @@ namespace BackSide
             // MLS 9/14/23 Added to see JWT Bearer Tokens(Access Tokens)
             // Comment out because it slows down my site
             // Logs the output to a console window?
-            builder.Services.AddHttpLogging(logging =>
-            {
-                logging.LoggingFields = HttpLoggingFields.All;
-                logging.RequestHeaders.Add("sec-ch-ua");
-                logging.ResponseHeaders.Add("MyResponseHeader");
-                logging.MediaTypeOptions.AddText("application/javascript");
-                logging.RequestBodyLogLimit = 4096;
-                logging.ResponseBodyLogLimit = 4096;
+            //builder.Services.AddHttpLogging(logging =>
+            //{
+            //    logging.LoggingFields = HttpLoggingFields.All;
+            //    logging.RequestHeaders.Add("sec-ch-ua");
+            //    logging.ResponseHeaders.Add("MyResponseHeader");
+            //    logging.MediaTypeOptions.AddText("application/javascript");
+            //    logging.RequestBodyLogLimit = 4096;
+            //    logging.ResponseBodyLogLimit = 4096;
 
-            });
+            //});
 
 
             // 9/24/23 set up database context
@@ -168,9 +173,10 @@ namespace BackSide
 
                 app.UseHttpsRedirection();
 
-
-                app.UseAuthentication();
-                app.UseAuthorization();
+                // MLS 11/15/23 Remove authentication and authorization in Azure until I can learn more at a later time
+                // These setting work on localhost, but not in Azure
+                // app.UseAuthentication();
+                // app.UseAuthorization();
 
 
                 app.MapControllers();
