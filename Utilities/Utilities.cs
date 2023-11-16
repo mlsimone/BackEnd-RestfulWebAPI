@@ -6,6 +6,7 @@ using System.Drawing;
 using Microsoft.AspNetCore.Http;
 using static System.Net.Mime.MediaTypeNames;
 using System.Configuration;
+using BackSide.Controllers;
 
 namespace BackSide.Utilities
 {
@@ -15,17 +16,23 @@ namespace BackSide.Utilities
         private readonly IConfiguration _configuration;
 #if Use_Azure_Blob_Storage
         private readonly BlobStorageService _blobStorageService;
+        private readonly ILogger _logger;
         public FileStorageService(IConfiguration configuration,
-                                    BlobStorageService blobStorageService)
+                                    BlobStorageService blobStorageService,
+                                      ILogger<ItemsController> logger)
         {
             _blobStorageService = blobStorageService;
 #else
-        public FileStorageService(IConfiguration configuration) {
+        public FileStorageService(IConfiguration configuration,
+                                 ILogger<ItemsController> logger) 
+         {
+            _baseImageDirectory = _configuration["ImageDirectory"]; // var defaultLogLevel = Configuration["Logging:LogLevel:Default"];
+
 #endif
             _configuration = configuration;
-            _baseImageDirectory = _configuration["ImageDirectory"]; // var defaultLogLevel = Configuration["Logging:LogLevel:Default"];
             // MLS 7/26/23 below gave null result -- didn't work
             // System.Configuration.ConfigurationManager.AppSettings["ImageDirectory"];
+            _logger = logger;
 
         }
         public async Task<string> GetImageAsB64String(string imageDirectory, string imageName)
@@ -37,8 +44,10 @@ namespace BackSide.Utilities
 
 #if Use_Azure_Blob_Storage
             base64String = await _blobStorageService.GetImageFromAzureBlobStorageAsBase64Async(imageDirectory, imageName);
+            _logger.LogWarning($"BlobStorage getting {imageName} from container {imageDirectory}");
 #else
             base64String = GetImageFromHardDriveAsBase64(imageDirectory, imageName);
+            _logger.LogWarning($"HardDrive getting {imageName} from directory {imageDirectory}");
 #endif
             return base64String;
         }
@@ -56,8 +65,10 @@ namespace BackSide.Utilities
                 // string fileName = formFile.FileName.Substring(0,len);
 #if Use_Azure_Blob_Storage
                 _blobStorageService.SaveImageToAzureBlobStorage(image, imageDirectory, fileName);
+                _logger.LogWarning($"BlobStorage saving {fileName} in container {imageDirectory}");
 #else
                 SaveImageToHardDrive(image, imageDirectory, fileName);
+                _logger.LogWarning($"HardDrive saving {fileName} from directory {imageDirectory}");
 #endif
             }
         }

@@ -26,12 +26,15 @@ namespace BackSide.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly FileStorageService _fileStorageService;
+        private readonly ILogger _logger;
 
         public ItemsController(ApplicationDbContext context,
-            FileStorageService fileStorageService)
+            FileStorageService fileStorageService,
+            ILogger<ItemsController> logger)
         {
             _context = context;
             _fileStorageService = fileStorageService;
+            _logger = logger;
         }
 
         // GET: api/Items
@@ -44,7 +47,10 @@ namespace BackSide.Controllers
                 IEnumerable<Item> items;
                 if (_context.items == null)
                 {
-                    return Problem("$There is a problem accessing the database. Verify database is running.");
+                    string msg = "There is a problem accessing the database. Verify database is running.";
+                    _logger.LogError($"{msg}. Error: database _context = NULL");
+                    return Problem($"{msg}");
+                    
                 }
 
                 if (!string.IsNullOrEmpty(searchFor))  // get all items from database
@@ -60,7 +66,9 @@ namespace BackSide.Controllers
             }
             catch (Exception e)
             {
-                return Problem("$There is a problem retrieving items (database) and their images.");
+                string msg = "There is a problem retrieving items(database) and their images.";
+                _logger.LogError($"{msg}. Exception: {e.Message} {e.InnerException}");
+                return Problem("${msg}");
             }
 
         }
