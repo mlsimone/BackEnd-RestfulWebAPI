@@ -19,7 +19,7 @@ namespace BackSide.Controllers
     [ApiController]
     // MLS 11/15/23 Remove call until I can learn more about Authorization in Azure. This setting works great in localhost
     // MLS 10/16/23 Temporarily remove call to this
-    // [Authorize]
+    [Authorize]
     public class ImagesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;

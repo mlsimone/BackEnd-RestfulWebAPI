@@ -34,11 +34,11 @@ namespace BackSide.Utilities
 
             // return the image in "imagename" as a base64 encoded string
             string base64String;
-            
+
 #if Use_Azure_Blob_Storage
-            base64String = GetImageFromHardDriveAsBase64(imageDirectory, imageName);
-#else
             base64String = await _blobStorageService.GetImageFromAzureBlobStorageAsBase64Async(imageDirectory, imageName);
+#else
+            base64String = GetImageFromHardDriveAsBase64(imageDirectory, imageName);
 #endif
             return base64String;
         }
@@ -55,9 +55,9 @@ namespace BackSide.Utilities
                 // int len = formFile.FileName.IndexOf(":");
                 // string fileName = formFile.FileName.Substring(0,len);
 #if Use_Azure_Blob_Storage
-                SaveImageToHardDrive(image, imageDirectory, fileName);
-#else
                 _blobStorageService.SaveImageToAzureBlobStorage(image, imageDirectory, fileName);
+#else
+                SaveImageToHardDrive(image, imageDirectory, fileName);
 #endif
             }
         }
