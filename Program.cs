@@ -34,6 +34,7 @@ namespace BackSide
             WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
             // Add services to the container.
 
+            // MLS 11/16/23 Figured out that Azure reads appsettings.json, so can read section "AzureAd"
             // MLS 11/15/23 The applicatin is crashing in Easy_Auth -- which is the built in Authentication. 
             // At this point in time, I have no idea why the Authentication is crashing, but I can't see any of my logged messages,
             // like "starting the app"
@@ -50,8 +51,8 @@ namespace BackSide
             // MLS 10/16/23 Temporarily remove call to this. Not sure is this should be called when software is hosted in Azure Web App?
             // MLS 9/14/23 Access Token Validation is done for the developer by Microsoft validation code when this is called.
             // See https://learn.microsoft.com/en-us/azure/active-directory/develop/scenario-protected-web-api-app-configuration?tabs=aspnetcore
-            //builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            //                .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
+            builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                            .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
 
             // MLS 9/13/23 This method was discussed in a README file on github, but not used
             // in corresponding code sample
@@ -61,16 +62,16 @@ namespace BackSide
             // MLS 9/14/23 Added to see JWT Bearer Tokens(Access Tokens)
             // Comment out because it slows down my site
             // Logs the output to a console window?
-            //builder.Services.AddHttpLogging(logging =>
-            //{
-            //    logging.LoggingFields = HttpLoggingFields.All;
-            //    logging.RequestHeaders.Add("sec-ch-ua");
-            //    logging.ResponseHeaders.Add("MyResponseHeader");
-            //    logging.MediaTypeOptions.AddText("application/javascript");
-            //    logging.RequestBodyLogLimit = 4096;
-            //    logging.ResponseBodyLogLimit = 4096;
+            builder.Services.AddHttpLogging(logging =>
+            {
+                logging.LoggingFields = HttpLoggingFields.All;
+                logging.RequestHeaders.Add("sec-ch-ua");
+                logging.ResponseHeaders.Add("MyResponseHeader");
+                logging.MediaTypeOptions.AddText("application/javascript");
+                logging.RequestBodyLogLimit = 4096;
+                logging.ResponseBodyLogLimit = 4096;
 
-            //});
+            });
 
 
             // 9/24/23 set up database context
@@ -173,10 +174,11 @@ namespace BackSide
 
                 app.UseHttpsRedirection();
 
+                // MLS 11/16/23 Re-instated because Azure can read AzureAd section of appsettings.json file
                 // MLS 11/15/23 Remove authentication and authorization in Azure until I can learn more at a later time
                 // These setting work on localhost, but not in Azure
-                // app.UseAuthentication();
-                // app.UseAuthorization();
+                app.UseAuthentication();
+                app.UseAuthorization();
 
 
                 app.MapControllers();
@@ -185,7 +187,7 @@ namespace BackSide
             }
             catch (Exception ex)
             {
-                //app?.Logger.LogError($"MAIN has thrown an exception.\n {ex.Message}");
+                System.Diagnostics.Trace.TraceError($"If you're seeing this, the application threw this exception:\n{ex.Message}");
 
             }
         }
