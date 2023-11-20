@@ -1,4 +1,5 @@
-﻿using Azure;
+﻿#define Use_Azure_Blob_Storage
+using Azure;
 using Azure.Core;
 using Azure.Identity;
 using Azure.Storage.Blobs;
@@ -14,6 +15,7 @@ using System.Threading.Channels;
 
 namespace BackSide.Utilities
 {
+#if Use_Azure_Blob_Storage
     public class BlobStorageService
     {
         private readonly IConfiguration _configuration;
@@ -201,4 +203,5 @@ namespace BackSide.Utilities
 
 
     }
+#endif
 }
