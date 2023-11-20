@@ -134,11 +134,9 @@ namespace BackSide.Controllers
         public async Task<ActionResult<Item>> PostImages([FromForm] List<IFormFile> images, [FromQuery] int itemId) // , int itemId) 
         {
             Item item;
-            string imageDirectory;
 
             try
             {
-
                 if (_context.images == null || _context.items == null)
                 {
                     return Problem("$There is a problem accessing the database. Verify database is running.");
