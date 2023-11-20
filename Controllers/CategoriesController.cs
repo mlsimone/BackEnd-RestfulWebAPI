@@ -14,8 +14,7 @@ namespace BackSide.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    // MLS 10/16/23 Temporarily remove call to this so I can add categories using Postman
-    //[Authorize]
+    [Authorize]
     
     public class CategoriesController : ControllerBase
     {
