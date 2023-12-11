@@ -17,15 +17,17 @@ namespace BackSide.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+
     public class ImagesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
         private readonly FileStorageService _fileStorageService;
-        public ImagesController(ApplicationDbContext context, FileStorageService fileStorageService)
+        private readonly ILogger _logger;
+        public ImagesController(ApplicationDbContext context, FileStorageService fileStorageService, ILogger<ImagesController> logger)
         {
             _context = context;
             _fileStorageService = fileStorageService;
+            _logger = logger;
         }
 
         //// GET: api/Images
@@ -46,33 +48,42 @@ namespace BackSide.Controllers
                           // You should be able to do either/or?
                           // public async Task<ActionResult<Image>> GetImages(int id)
 
-        
+
         [RequiredScope(RequiredScopesConfigurationKey = "AzureAd:Scopes:Read")]
-        public async Task<ActionResult<IEnumerable<Image>>> GetItemImages(int id, [FromQuery] string imageDirectory)  // [FromQuery] int itemId)
+        public ActionResult<IEnumerable<Image>> GetItemImages(int id, [FromQuery] string imageDirectory)  // [FromQuery] int itemId)
         {
             try
             {
                 IEnumerable<Image> images;
                 if (_context.images == null)
                 {
-                    return Problem("$There is a problem accessing the database. Verify database is running.");
+                    string msg = "ImagesController: GetItemImages: There is a problem accessing the database. Verify database is running.";
+                    _logger.LogCritical(msg);
+                    return Problem(msg);
                 }
                 images = _context.images.Where((image) => (image.itemId == id));
                 //await _context.images.FindAsync(id);
 
                 if (images == null)
                 {
+                    _logger.LogError($"ImagesController: Unable to GET images for item w/ id {id}. The images should be located in {imageDirectory}.");
                     return NotFound();
                 }
-               
+
                 foreach (var image in images)
-                    image.imageNameB64 = await _fileStorageService.GetImageAsB64String(imageDirectory, image.imageNameB64);
+                {
+                    _logger.LogInformation($"ImagesController: Getting image {image.imageNameB64} in {imageDirectory}");
+                    image.imageNameB64 = _fileStorageService.GetImageAsB64String(imageDirectory, image.imageNameB64);
+                }
 
                 return Ok(images);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                return Problem(e.Message);
+                string msg = "ImagesController: An exception occurred  attempting to GET images for item w/ id" + id + ".  " +
+                                    ex.Message + " -  " + ex.InnerException;
+                _logger.LogCritical(msg);
+                return Problem(msg);
             }
         }
 
@@ -109,6 +120,7 @@ namespace BackSide.Controllers
 
         // POST: api/Images
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        [Authorize]
         [HttpPost]
         // GET: api/Images/5
         // [HttpPost("{itemId}")]  // MLS 7/25/23 - Swagger doesn't work when I attempt to use this, so have to send the itemId in the QueryString as indicated below
@@ -129,78 +141,88 @@ namespace BackSide.Controllers
         // public async Task<ActionResult<Item>> PostImages([FromForm] List<Image> images, [FromQuery] int itemId) // , int itemId) 
         // I am able to receive an array of IFormFile, therefore decided to do that...
         [RequiredScope(RequiredScopesConfigurationKey = "AzureAd:Scopes:Write")]
-        public async Task<ActionResult<Item>> PostImages([FromForm] List<IFormFile> images, [FromQuery] int itemId) // , int itemId) 
+        public ActionResult<Item> PostImages([FromForm] List<IFormFile> images, [FromQuery] int itemId) // , int itemId) 
         {
-            Item item;
+            Item? item;
 
+
+            if (_context.images == null || _context.items == null)
+            {
+                string msg = "ImagesController: PostImages: There is a problem accessing the database. Verify database is running.";
+                _logger.LogCritical(msg);
+                return Problem(msg);
+            }
+
+            // 12/11/23 The item entity was defined incorrectly (had a 1-to-1 relationship between item and image).
+            // this caused problems with missing records.
+            // on 12/8/23, I modified item to have a 1-to-many relationship to images, and all my images saved.
+            // the reason I created a transaction and savepoint was to try and control the records being saved to database.
+            // it didn't work.  The only thing that prevented missing records was the fix from 1-to-1 to 1-to-many.
+            using var transaction = _context.Database.BeginTransaction();
             try
             {
-                if (_context.images == null || _context.items == null)
-                {
-                    return Problem("$There is a problem accessing the database. Verify database is running.");
-                }
+                transaction.CreateSavepoint("BeforeImagesSaved");
 
                 // get the images' item...so we can get the imageDirectory
-                item = await _context.items.FindAsync(itemId);
+                item = _context.items.Find(itemId);
                 if (item == null)
                 {
+                    _logger.LogError($"ImagesController: Unable to POST images.  Associated item w/ id {itemId} NotFound.");
                     return NotFound();
                 }
                 else  // save additional images sent in HttpRequest
                 {
-                    try
+
+                    int numImages = 0;
+                    foreach (IFormFile image in images)
                     {
-                        foreach (IFormFile image in images)
-                        {
-                            // create a database record
-                            Image imageRecord = new Image(itemId, image.FileName);
+                        _logger.LogInformation($"ImagesController: Beginning to POST imageRecord and image for {image.FileName}.");
 
-                            // saves imageName and itemId to database
-                            _context.images.Add(imageRecord);
-                            await _context.SaveChangesAsync();
+                        // create a database record
+                        Image imageRecord = new Image(itemId, image.FileName);
 
-                            // save the image to hard drive in the item's imageDirectory
-                            _fileStorageService.SaveImage(image, item.imageDirectory);
-                        }
+                        // saves imageName and itemId to database
+                        _logger.LogInformation($"ImagesController: Attempting to POST imageRecord for item w/ id {itemId} to database.");
+                        _context.images.Add(imageRecord);
+                        numImages++;
+
+                        // save the image to hard drive in the item's imageDirectory
+                        _logger.LogInformation($"ImagesController: Attempting to POST image {image.FileName} to storage.");
+                        _fileStorageService.SaveImage(image, item.imageDirectory);
+                        _logger.LogInformation($"ImagesController: POSTED image {image.FileName} to storage.");
 
                     }
-                    catch (Exception e)
-                    {
-                        string msg = "Problem saving additional images for" + item.name + "   -   " + e.Message;
-                        return Problem(msg);
-                    }
+
+                    int rc = _context.SaveChanges();
+                    if (rc == numImages) _logger.LogInformation($"ImagesController: POSTED {rc} imageRecords for item w/ id {itemId} to database.");
+                    else _logger.LogError($"ImagesController: POSTED {rc} out of {numImages} imageRecords for item w/ id {itemId} to database.");
+
+                    transaction.Commit();
 
 
-                    try
-                    {
-                        item.imageName = await _fileStorageService.GetImageAsB64String(item.imageDirectory, item.imageName);
-                        // Note: before sending the item back in HttpResponse, we need to convert
-                        // the image.name to a base64string representation
-                        // of image.
-
-                        // MLS 7/24/23 revisit this at another time.
-                        // CreatedAtAction calls are more complex and several variations.
-                        // For now just return the item in an OK message returns 200
-                        // 
-                        // CreatedAtAction returns a 201 which means that something was created
-                        // CreatedAtAction("GetItemImages", new {}, imagesB64
-                        // CreatedAtAction("GetImage", new { id = image.id }, image);
-                        // MLS 7/24/23
-                        return Ok(item);
-                    }
-                    catch (Exception e)
-                    {
-                        string msg = "Problem sending " + item.name + " back to browser in HttpResponse -   " + e.Message;
-                        return Problem(msg);
-                    }
+                    item.imageName = _fileStorageService.GetImageAsB64String(item.imageDirectory, item.imageName);
+                    if (String.IsNullOrEmpty(item.imageName)) _logger.LogWarning("Image is Null or Empty");
+ 
+                    // MLS 7/24/23 revisit this at another time.
+                    // CreatedAtAction calls are more complex and several variations.
+                    // For now just return the item in an OK message returns 200
+                    // 
+                    // CreatedAtAction returns a 201 which means that something was created
+                    // CreatedAtAction("GetItemImages", new {}, imagesB64
+                    // CreatedAtAction("GetImage", new { id = image.id }, image);
+                    // MLS 7/24/23
+                    return Ok(item);
 
                 }
             }
             catch (Exception e)
             {
-                string msg = "Problem saving additional images for item" + e.Message;
+                transaction.RollbackToSavepoint("BeforeImagesSaved");
+                string msg = "ImagesController: An exception occurred while POSTING images for item w/ id " + itemId + ".\n" + e.Message;
+                _logger.LogCritical(msg);
                 return Problem(msg);
             }
+
         }
 
 
@@ -208,6 +230,7 @@ namespace BackSide.Controllers
         // MLS ToDo: Delete all images associated with a given itemId, not imageId
         // and the function should be called DeleteImages(int itemId)
         // DELETE: api/Images/5
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteImage(int id)
         {

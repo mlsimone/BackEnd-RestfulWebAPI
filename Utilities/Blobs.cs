@@ -1,4 +1,4 @@
-﻿#define Use_Azure_Blob_Storage
+﻿//#define Use_Azure_Blob_Storage
 using Azure;
 using Azure.Core;
 using Azure.Identity;
@@ -20,7 +20,7 @@ namespace BackSide.Utilities
     {
         private readonly IConfiguration _configuration;
         private readonly BlobServiceClient _blobServiceClient;
-        private readonly string _blobAccount;
+        private readonly string? _blobAccount;
         private readonly TokenCredential _credential;
         private readonly ILogger _logger;
         public BlobStorageService(BlobServiceClient blobServiceClient, IConfiguration configuration, ILogger<BlobStorageService> logger)
@@ -83,7 +83,7 @@ namespace BackSide.Utilities
                 // Gets a reference to a BlobClient object by calling the GetBlobClient method on the container from the Create a container section.
                 blobClient = containerClient.GetBlobClient(blobName);
 
-                Console.WriteLine("Uploading to Blob storage as blob:\n\t {0}\n", blobClient.Uri);
+                Console.WriteLine("Attempting to SAVE {fileName} to Blob storage as blob:\n\t {0}\n", blobClient.Uri);
 
                 // Uploads the local text file to the blob by calling the UploadAsync method.
                 // This method creates the blob if it doesn't already exist, and overwrites it if it does.
@@ -91,20 +91,20 @@ namespace BackSide.Utilities
                 // MLS ToDo:
                 // How do you convert an IFormFile to a stream?
                 blobClient.Upload(image.OpenReadStream(), true);
+                _logger.LogInformation($"BlobStorageService: SAVED file {fileName} to container {imageDirectory}"); 
             }
             catch (Exception ex)
             {
-                _logger.LogCritical("An exception occurred when trying to SAVE {filename} in Container: {container}. \n {mess} \n {inner}", 
-                    fileName, containerName, ex.Message, ex.InnerException);
-
+                _logger.LogCritical($"BlobStorageService: An exception occurred while trying to SAVE {fileName} in Container: {imageDirectory}. \n {ex.Message} \n {ex.InnerException}");
             }
 
         }
 
         // MLS ToDo: 9/26/23
-        public async Task<string> GetImageFromAzureBlobStorageAsBase64Async(string imageDirectory, string fileName)
+        public string GetImageFromAzureBlobStorageAsBase64Async(string imageDirectory, string fileName)
         {
             string containerName = imageDirectory.ToLower();
+            string base64String = String.Empty;
 
             try
             {
@@ -113,8 +113,6 @@ namespace BackSide.Utilities
                 Uri blobUri = new Uri($"{_blobAccount}/{containerName}/{fileName}");
 
                 BlobClient blobClient = new BlobClient(blobUri, _credential, default);
-
-                string base64String = String.Empty;
 
                 // These streams don't support writing and will throw an exception on this call ... await stream.WriteAsync(imageBytes);
                 // using (Stream stream = blobClient.OpenRead())
@@ -131,50 +129,56 @@ namespace BackSide.Utilities
                     // append this before the base64 image representation: data: image / jpeg; base64
                     base64String = "data: image / jpeg; base64," + Convert.ToBase64String(imageBytes);
 
-                    return base64String;
+                    _logger.LogInformation($"BlobStorageService: RETRIEVED {fileName} from containiner: {imageDirectory}");
+                    
                 }
             }
             catch (Exception ex) {
-                _logger.LogCritical("An exception occurred when trying to GET {filename} from Container: {container}. \n {mess} \n {inner}",
-                    fileName, containerName, ex.Message, ex.InnerException);
-
-                return string.Empty;
+                _logger.LogCritical($"BlobStorageService: An exception occurred while trying to GET {fileName} from Container: {imageDirectory}. \n {ex.Message} \n {ex.InnerException}");
             }
+
+            return base64String;
         }
 
         public Boolean BlobNameExists(string blobName, BlobContainerClient container)
         {
+            Boolean bVal = false;
             try
             {
                 foreach (BlobItem blobItem in container.GetBlobs())
                 {
-                    if (blobItem.Name.Equals(blobName)) return true;
-                }
-                return false;
+                    if (blobItem.Name.Equals(blobName))
+                    {
+                        bVal = true;
+                        break;
+                    }
+                }  
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                return false;
+                _logger.LogCritical($"BlobStorageService: An exception occurred: {ex.Message} \n {ex.InnerException}");
             }
+            return bVal;
         }
         public Boolean ContainerNameExists(string containerName) //, out BlobContainerItem containerItem)
         {
+            Boolean bVal = false;
             try
             {
                 foreach (BlobContainerItem container in _blobServiceClient.GetBlobContainers())
                 {
                     if (container.Name.Equals(containerName))
                     {
-                        // containerItem = container;
-                        return true;
+                        bVal = true;
+                        break;
                     }
                 }
-                return false;
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                return false;
+                _logger.LogCritical($"BlobStorageService: An exception occurred: {ex.Message} \n {ex.InnerException}");
             }
+            return bVal;
         }
 
         // From Microsoft: see https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-container-create
@@ -193,11 +197,9 @@ namespace BackSide.Utilities
                     Console.WriteLine("Created root container.");
                 }
             }
-            catch (RequestFailedException e)
+            catch (Exception ex)
             {
-                Console.WriteLine("HTTP error code {0}: {1}",
-                                    e.Status, e.ErrorCode);
-                Console.WriteLine(e.Message);
+                Console.WriteLine($"BlobStorageService: An exception occurred: {ex.Message} \n {ex.InnerException}");
             }
         }
 

@@ -18,7 +18,6 @@ namespace BackSide.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
     public class ItemsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -57,7 +56,7 @@ namespace BackSide.Controllers
 
                 // get the image from the hard drive and store it as base64 string which is <img src=base64
                 foreach (var item in items)
-                    item.imageName = await _fileStorageService.GetImageAsB64String(item.imageDirectory, item.imageName);
+                    item.imageName = _fileStorageService.GetImageAsB64String(item.imageDirectory, item.imageName);
 
                 return Ok(items);
             }
@@ -90,7 +89,7 @@ namespace BackSide.Controllers
                 }
 
                 // get the image from the hard drive and store it as base64 string so it can be displayed in image tag
-                item.imageName = await _fileStorageService.GetImageAsB64String(item.imageDirectory, item.imageName);
+                item.imageName = _fileStorageService.GetImageAsB64String(item.imageDirectory, item.imageName);
 
                 return Ok(item);
             }
@@ -135,9 +134,10 @@ namespace BackSide.Controllers
 
         // POST: api/Items
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        [Authorize]
         [HttpPost]
         [RequiredScope(RequiredScopesConfigurationKey = "AzureAd:Scopes:Write")]
-        public async Task<ActionResult<Item>> PostItem([FromForm] Item item)
+        public ActionResult<Item> PostItem([FromForm] Item item)
         {
             // Item itemNoFormFile = item.CloneNoImage();
             if (_context.items == null)
@@ -145,13 +145,17 @@ namespace BackSide.Controllers
                 return Problem($"{item.name} cannot be saved to the database. There is a problem accessing the database.");
             }
 
+            using var transaction = _context.Database.BeginTransaction();
             try
             {
-                // MLS 7/25/23 I think there is a problem with the Add and Save when item.image is Non-null.
-                // Will clone the item and strip off the item.image
-                // _context.items.Add(itemNoFormFile);
+                // MLS 11/7/23 The 1st image for item is NOT being saved to DB and I 
+                // have no idea why or what EF Core is doing?
+                // So decided to create
+                // SAVEPOINTS & Transactions so I have more control -- I think?
+                transaction.CreateSavepoint("BeforeItemSaved");
                 _context.items.Add(item);
-                await _context.SaveChangesAsync();
+                _context.SaveChanges();
+                transaction.Commit();
 
                 if (item.image != null)
                 {
@@ -163,12 +167,13 @@ namespace BackSide.Controllers
 
                     // Now that the item has been saved to DB,
                     // Tack on the base64 string representation into item.imageName...
-                    item.imageName = await _fileStorageService.GetImageAsB64String(item.imageDirectory, item.imageName);
+                    item.imageName = _fileStorageService.GetImageAsB64String(item.imageDirectory, item.imageName);
                 }
 
             }
             catch (Exception e)
             {
+                transaction.RollbackToSavepoint("BeforeItemSaved");
                 string msg = e.Message + e.InnerException;
                 return Problem($"{item.name} was not saved to the database. {msg}");
             }
@@ -177,6 +182,7 @@ namespace BackSide.Controllers
         }
 
         // DELETE: api/Items/5
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteItem(int id)
         {
