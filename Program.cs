@@ -1,4 +1,4 @@
-#define Use_Azure_Blob_Storage
+//#define Use_Azure_Blob_Storage
 
 using BackSide.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -79,9 +79,9 @@ namespace BackSide
             string azure_connection_string = String.Empty;
             string error_database = String.Empty;
             try
-            {   // MLS 11/14/23 ToDo
-                azure_connection_string = builder.Configuration.GetConnectionString("AZURE_SQL_CONNECTIONSTRING");
-                // azure_connection_string = builder.Configuration.GetConnectionString("Default");
+            {   
+                //azure_connection_string = builder.Configuration.GetConnectionString("AZURE_SQL_CONNECTIONSTRING");
+                azure_connection_string = builder.Configuration.GetConnectionString("Default")!;
                 // Uncomment one of the two lines depending on the identity type    
                 SqlConnection authenticatedConnection = new SqlConnection(azure_connection_string); // system-assigned identity
                 //SqlConnection authenticatedConnection = 
@@ -90,6 +90,7 @@ namespace BackSide
                 // TrustServerCertificate=True"); // user-assigned identity
 
                 // get the database context
+                // MLS 11/7/23 The database context lives for the duration of an HTTP Request.
                 builder.Services.AddDbContext<ApplicationDbContext>(options =>
                     options.UseSqlServer(authenticatedConnection.ConnectionString));
             }
@@ -144,10 +145,8 @@ namespace BackSide
                 // In Visual Studio:  In the Debug output window when debugging. In the ASP.NET Core Web Server window.
                 // With dotnet run:   In the console window 
 
-                app.Logger.LogWarning("\n\n\n");
-                app.Logger.LogWarning("\n\n\n");
-                app.Logger.LogWarning("Starting the app\n");
-                app.Logger.LogWarning($"Connection String: {azure_connection_string}\n\n\n");
+                app.Logger.LogInformation("Starting the app\n");
+                app.Logger.LogInformation($"Connection String: {azure_connection_string}\n\n\n");
                 if (!String.IsNullOrEmpty(error_database)) app.Logger.LogWarning($"Error: {error_database}\n\n\n");
 #if Use_Azure_Blob_Storage
                 if (!String.IsNullOrEmpty(error_blobStorage)) app.Logger.LogWarning($"Error: {error_blobStorage}\n\n\n");

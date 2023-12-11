@@ -14,8 +14,8 @@ namespace BackSide.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
     
+
     public class CategoriesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -36,37 +36,21 @@ namespace BackSide.Controllers
         {
             try
             {
-                _logger.LogWarning("\n\n\n");
-                _logger.LogWarning("\n\n\n");
-                _logger.LogWarning("Call to GetCategories");
-                _logger.LogWarning("\n\n\n");
-                _logger.LogWarning("\n\n\n");
-                if (_context == null)
+                _logger.LogInformation("Call to GetCategories");
+                if ((_context == null) || (_context.categories == null))
                 {
-                    _logger.LogError("\n\n\n");
-                    _logger.LogError("\n\n\n");
-                    _logger.LogError("Database Context is NULL");
-                    _logger.LogError("\n\n\n");
-                    _logger.LogError("\n\n\n");
-                }
-
-                if (_context.categories == null)
-                {
+                    _logger.LogError("CategoriesController: Database Context is NULL, returning NotFound back to UI");
                     return NotFound();
                 }
-                return await _context.categories.ToListAsync();
-            }
-            catch(Exception e)
-            {
-                _logger.LogError("\n\n\n");
-                _logger.LogError("\n\n\n");
-                _logger.LogError("Call to GetCategories Shit the bed with exception:");
-                _logger.LogError($"{e.Message}\n\n\n");
-                _logger.LogError($"{e.InnerException}\n\n\n");
-                _logger.LogError("\n\n\n");
-                _logger.LogError("\n\n\n");
 
-                return Problem($"{ e.Message}");
+                else 
+                    return await _context.categories.ToListAsync();
+            }
+            catch(Exception ex)
+            {
+                string msg = "CategoriesController: An exception occurred in GET categories: " + ex.Message;
+                _logger.LogCritical(msg);
+                return Problem(msg);
             }
             
         }
@@ -92,6 +76,7 @@ namespace BackSide.Controllers
 
         // PUT: api/Categories/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutCategory(int id, Category category)
         {
@@ -123,6 +108,7 @@ namespace BackSide.Controllers
 
         // POST: api/Categories
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        [Authorize]
         [HttpPost]
         public async Task<ActionResult<Category>> PostCategory([FromBody] Category category)
         {
@@ -137,6 +123,7 @@ namespace BackSide.Controllers
         }
 
         // DELETE: api/Categories/5
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCategory(int id)
         {
