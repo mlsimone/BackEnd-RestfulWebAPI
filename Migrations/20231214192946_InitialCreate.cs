@@ -5,7 +5,7 @@
 namespace BackSide.Migrations
 {
     /// <inheritdoc />
-    public partial class initialCreate : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -76,7 +76,7 @@ namespace BackSide.Migrations
                 name: "IX_items_categoryId",
                 table: "items",
                 column: "categoryId",
-                unique: false);
+                unique: true);
         }
 
         /// <inheritdoc />
