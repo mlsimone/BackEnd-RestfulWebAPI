@@ -55,8 +55,7 @@ namespace BackSide.Migrations
 
                     b.HasKey("id");
 
-                    b.HasIndex("itemId")
-                        .IsUnique();
+                    b.HasIndex("itemId");
 
                     b.ToTable("images");
                 });
@@ -99,34 +98,11 @@ namespace BackSide.Migrations
                     b.ToTable("items");
                 });
 
-            modelBuilder.Entity("BackSide.Models.Simple", b =>
-                {
-                    b.Property<int>("id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("id"));
-
-                    b.Property<int>("categoryId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("id");
-
-                    b.HasIndex("categoryId")
-                        .IsUnique();
-
-                    b.ToTable("simpleItems");
-                });
-
             modelBuilder.Entity("BackSide.Models.Image", b =>
                 {
                     b.HasOne("BackSide.Models.Item", null)
-                        .WithOne()
-                        .HasForeignKey("BackSide.Models.Image", "itemId")
+                        .WithMany()
+                        .HasForeignKey("itemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -136,15 +112,6 @@ namespace BackSide.Migrations
                     b.HasOne("BackSide.Models.Category", null)
                         .WithOne()
                         .HasForeignKey("BackSide.Models.Item", "categoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("BackSide.Models.Simple", b =>
-                {
-                    b.HasOne("BackSide.Models.Category", null)
-                        .WithOne()
-                        .HasForeignKey("BackSide.Models.Simple", "categoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

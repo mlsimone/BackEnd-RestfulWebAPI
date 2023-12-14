@@ -5,7 +5,7 @@
 namespace BackSide.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class initialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -48,26 +48,6 @@ namespace BackSide.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "simpleItems",
-                columns: table => new
-                {
-                    id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    categoryId = table.Column<int>(type: "int", nullable: false),
-                    name = table.Column<string>(type: "nvarchar(max)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_simpleItems", x => x.id);
-                    table.ForeignKey(
-                        name: "FK_simpleItems_categories_categoryId",
-                        column: x => x.categoryId,
-                        principalTable: "categories",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "images",
                 columns: table => new
                 {
@@ -90,20 +70,13 @@ namespace BackSide.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_images_itemId",
                 table: "images",
-                column: "itemId",
-                unique: true);
+                column: "itemId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_items_categoryId",
                 table: "items",
                 column: "categoryId",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_simpleItems_categoryId",
-                table: "simpleItems",
-                column: "categoryId",
-                unique: true);
+                unique: false);
         }
 
         /// <inheritdoc />
@@ -111,9 +84,6 @@ namespace BackSide.Migrations
         {
             migrationBuilder.DropTable(
                 name: "images");
-
-            migrationBuilder.DropTable(
-                name: "simpleItems");
 
             migrationBuilder.DropTable(
                 name: "items");

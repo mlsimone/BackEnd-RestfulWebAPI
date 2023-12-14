@@ -1,4 +1,4 @@
-﻿//#define Use_Azure_Blob_Storage
+﻿#define Use_Azure_Blob_Storage
 using Azure;
 using Azure.Core;
 using Azure.Identity;
