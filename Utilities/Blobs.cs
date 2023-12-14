@@ -20,14 +20,14 @@ namespace BackSide.Utilities
     {
         private readonly IConfiguration _configuration;
         private readonly BlobServiceClient _blobServiceClient;
-        private readonly string? _blobAccount;
+        private readonly string _blobAccount;
         private readonly TokenCredential _credential;
         private readonly ILogger _logger;
         public BlobStorageService(BlobServiceClient blobServiceClient, IConfiguration configuration, ILogger<BlobStorageService> logger)
         {
             _configuration = configuration;
             _blobServiceClient = blobServiceClient;
-            _blobAccount = _configuration["AzureBlobStorageAccount"]; // Configuration.GetValue<String>("AzureBlobStorageAccount");
+            _blobAccount = _configuration["AzureBlobStorageAccount"]!; // Configuration.GetValue<String>("AzureBlobStorageAccount");
             _logger = logger;
 
             // create the root container
@@ -83,7 +83,8 @@ namespace BackSide.Utilities
                 // Gets a reference to a BlobClient object by calling the GetBlobClient method on the container from the Create a container section.
                 blobClient = containerClient.GetBlobClient(blobName);
 
-                Console.WriteLine("Attempting to SAVE {fileName} to Blob storage as blob:\n\t {0}\n", blobClient.Uri);
+                string message = $"Attempting to SAVE {fileName} to Blob storage as blob:\n\t {blobClient.Uri.ToString}\n";
+                _logger.LogInformation(message);
 
                 // Uploads the local text file to the blob by calling the UploadAsync method.
                 // This method creates the blob if it doesn't already exist, and overwrites it if it does.
