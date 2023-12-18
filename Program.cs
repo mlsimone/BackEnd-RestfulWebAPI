@@ -78,7 +78,8 @@ namespace BackSide
                 // get the database context
                 // MLS 11/7/23 The database context lives for the duration of an HTTP Request.
                 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-                    options.UseSqlServer(authenticatedConnection.ConnectionString));
+                    options.UseSqlServer(authenticatedConnection.ConnectionString,
+                    providerOptions => providerOptions.EnableRetryOnFailure()));
             }
             catch (Exception e)
             {
