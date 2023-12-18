@@ -76,7 +76,7 @@ namespace BackSide.Migrations
                 name: "IX_items_categoryId",
                 table: "items",
                 column: "categoryId",
-                unique: true);
+                unique: false);
         }
 
         /// <inheritdoc />
