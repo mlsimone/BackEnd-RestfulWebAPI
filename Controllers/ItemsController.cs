@@ -64,7 +64,7 @@ namespace BackSide.Controllers
             {
                 string msg = "There is a problem retrieving items(database) and their images.";
                 _logger.LogError($"{msg}. Exception: {e.Message} {e.InnerException}");
-                return Problem($"{msg}");
+                return Problem($"{msg} {e.Message}");
             }
 
         }
