@@ -156,7 +156,7 @@ namespace BackSide
 
                 // MLS 9/14/23 Add logging so we can see the JWT Bearer token in requests from
                 // Angular client
-                // app.UseHttpLogging();
+                app.UseHttpLogging();
 
                 app.UseHttpsRedirection();
 
