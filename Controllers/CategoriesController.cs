@@ -43,10 +43,12 @@ namespace BackSide.Controllers
                     return NotFound();
                 }
 
-                else 
+                else
                     return await _context.categories.ToListAsync();
+                    // return Problem("This is a made up error message from the Categories Controller.  Y'all come back now ya hear!");
+
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 string msg = "CategoriesController: An exception occurred in GET categories: " + ex.Message;
                 _logger.LogCritical(msg);
@@ -70,7 +72,7 @@ namespace BackSide.Controllers
             {
                 return NotFound();
             }
-
+            
             return category;
         }
 

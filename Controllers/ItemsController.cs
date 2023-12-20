@@ -45,7 +45,7 @@ namespace BackSide.Controllers
                 {
                     string msg = "There is a problem accessing the database. Verify database is running.";
                     _logger.LogError($"{msg}. Error: database _context = NULL");
-                    return Content($"{msg}");
+                    return Problem($"{msg}");
                     
                 }
 
@@ -63,8 +63,8 @@ namespace BackSide.Controllers
             catch (Exception e)
             {
                 string msg = "There is a problem retrieving items(database) and their images.";
-                _logger.LogError($"{msg}. Exception: {e.Message} {e.InnerException}");
-                return Content($"{msg} {e.Message}");
+                _logger.LogError($"{msg}. Exception: {e.Message}");
+                return Problem($"{msg} {e.Message}");
             }
 
         }
@@ -76,7 +76,7 @@ namespace BackSide.Controllers
         {
             if (_context.items == null)
             {
-                return Content("There is a problem accessing the database. Verify that it is running.");
+                return Problem("There is a problem accessing the database. Verify that it is running.");
             }
 
             try
@@ -96,7 +96,7 @@ namespace BackSide.Controllers
             catch (Exception e)
             {
                 String msg = e.Message + e.InnerException;
-                return Content($"There was a problem getting the item (database) or image (hard drive): id = {id}.");
+                return Problem($"There was a problem getting the item (database) or image (hard drive): id = {id}.");
             }
 
         }
@@ -142,7 +142,7 @@ namespace BackSide.Controllers
             // Item itemNoFormFile = item.CloneNoImage();
             if (_context.items == null)
             {
-                return Content($"{item.name} cannot be saved to the database. There is a problem accessing the database.");
+                return Problem($"There is a problem accessing the database.  {item.name} cannot be saved to the database. ");
             }
 
             using var transaction = _context.Database.BeginTransaction();
@@ -174,8 +174,8 @@ namespace BackSide.Controllers
             catch (Exception e)
             {
                 transaction.RollbackToSavepoint("BeforeItemSaved");
-                string msg = e.Message + e.InnerException;
-                return Content($"{item.name} was not saved to the database. {msg}");
+                string msg = e.Message;
+                return Problem($"{item.name} was not saved to the database. {msg}");
             }
 
             return CreatedAtAction("GetItem", new { id = item.id }, item);
