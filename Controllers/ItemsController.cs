@@ -45,7 +45,7 @@ namespace BackSide.Controllers
                 {
                     string msg = "There is a problem accessing the database. Verify database is running.";
                     _logger.LogError($"{msg}. Error: database _context = NULL");
-                    return Problem($"{msg}");
+                    return Content($"{msg}");
                     
                 }
 
@@ -64,7 +64,7 @@ namespace BackSide.Controllers
             {
                 string msg = "There is a problem retrieving items(database) and their images.";
                 _logger.LogError($"{msg}. Exception: {e.Message} {e.InnerException}");
-                return Problem($"{msg} {e.Message}");
+                return Content($"{msg} {e.Message}");
             }
 
         }
@@ -76,7 +76,7 @@ namespace BackSide.Controllers
         {
             if (_context.items == null)
             {
-                return Problem("There is a problem accessing the database. Verify that it is running.");
+                return Content("There is a problem accessing the database. Verify that it is running.");
             }
 
             try
@@ -96,7 +96,7 @@ namespace BackSide.Controllers
             catch (Exception e)
             {
                 String msg = e.Message + e.InnerException;
-                return Problem($"There was a problem getting the item (database) or image (hard drive): id = {id}.");
+                return Content($"There was a problem getting the item (database) or image (hard drive): id = {id}.");
             }
 
         }
@@ -142,7 +142,7 @@ namespace BackSide.Controllers
             // Item itemNoFormFile = item.CloneNoImage();
             if (_context.items == null)
             {
-                return Problem($"{item.name} cannot be saved to the database. There is a problem accessing the database.");
+                return Content($"{item.name} cannot be saved to the database. There is a problem accessing the database.");
             }
 
             using var transaction = _context.Database.BeginTransaction();
@@ -175,7 +175,7 @@ namespace BackSide.Controllers
             {
                 transaction.RollbackToSavepoint("BeforeItemSaved");
                 string msg = e.Message + e.InnerException;
-                return Problem($"{item.name} was not saved to the database. {msg}");
+                return Content($"{item.name} was not saved to the database. {msg}");
             }
 
             return CreatedAtAction("GetItem", new { id = item.id }, item);
